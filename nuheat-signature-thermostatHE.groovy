@@ -160,11 +160,11 @@ static Integer getMinTemp(){
 	return 41
 }
 
-String logPrefix(){
+static String logPrefix(){
 	return "NuHeatSig"
 }
 
-Integer determineLogLevel(String data){
+static Integer determineLogLevel(String data){
 	switch (data?.toUpperCase()){
 	case "TRACE":
 		return 0
