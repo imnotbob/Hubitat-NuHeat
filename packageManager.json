@@ -1,0 +1,18 @@
+{
+  "packageName": "nuHeat",
+  "author": "nh.schottfam",
+  "minimumHEVersion": "2.1.9",
+  "dateReleased": "2020-05-17",
+  "drivers": [
+    {
+      "id": "665448da-1ed9-4b25-8b5b-53872afb3b4f",
+      "name": "NuHeat Signature Thermostat",
+      "namespace": "ericvitale",
+      "location": "https://raw.githubusercontent.com/imnotbob/Hubitat-NuHeat/master/nuheat-signature-thermostatHE.groovy",
+      "required": true
+    }
+  ],
+  "version": "1.0.0",
+  "releaseNotes": "Latest release",
+  "communityLink": "https://community.hubitat.com/t/nuheat-signature-integration/41148"
+}
