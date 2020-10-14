@@ -1,7 +1,7 @@
 /**
  *  NuHeat Signature Thermostat
+ *  Modified for HE by ERS 10/14/2020
  *
- * Modified for HE by ERS 5/17/2020
  *  Copyright 2016 ericvitale@gmail.com
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -26,8 +26,9 @@
  **/
 
 import groovy.time.TimeCategory
+import groovy.transform.Field
 
-static String version(){ return "v0.0.001.20200517" }
+public static String version(){ return "v0.0.001.20201014" }
 
 metadata{
 	definition (name: "NuHeat Signature Thermostat", namespace: "ericvitale", author: "ericvitale@gmail.com"){
@@ -61,6 +62,18 @@ metadata{
 			 "description":"Date object with time to end temperature override"
 			],
 		])
+		command( "setHeatingSetpointWithHoldHours",
+		[
+			["name": "Temperature*",
+			 "description":"Heating setpoint in degrees",
+			 "type": "NUMBER"
+			],
+			["name": "Hours*",
+			 "type": "NUMBER",
+			 "range": "1..23",
+			 "description":"Hours until end of temperature override"
+			],
+		])
 
 		attribute "supportedThermostatModes", "string"
 		attribute "scheduleStatus", "string"
@@ -73,7 +86,7 @@ metadata{
 		input "theUser", "text", title: "Username", description: "Your Nuheat email address", required:true
 		input "thePassword", "password", title: "Password", description: "Your Nuheat password", required:true
 		input "showPassword", "bool", title: "Show password in logs", defaultValue: false
-		input "defaultHoldTime", "number", title: "Default Hold Time on setting Heat setpoint (hours)", defaultValue: 1
+		input "defaultHoldTime", "number", title: "Default Hold Time on setting Heat setpoint (hours)", defaultValue: 1, range: "1..23"
 		input "autoRefresh1", "bool", title: "Auto Refresh (5 mins)", defaultValue: true
 		//input "tStatName", "text", title: "Name", required: true
 		input "defaultHoldTemperature", "number", title: "Default Indefinite Hold Temperature", defaultValue: getMinTemp()
@@ -154,6 +167,12 @@ metadata{
 */
 }
 
+@Field static final String sTRACE='TRACE'
+@Field static final String sDEBUG='DEBUG'
+@Field static final String sINFO='INFO'
+@Field static final String sWARN='WARN'
+@Field static final String sERROR='ERROR'
+
 //Fix this if using Celsius
 static Integer getMinTemp(){
 	//return 5
@@ -166,19 +185,19 @@ static String logPrefix(){
 
 static Integer determineLogLevel(String data){
 	switch (data?.toUpperCase()){
-	case "TRACE":
+	case sTRACE:
 		return 0
 		break
-	case "DEBUG":
+	case sDEBUG:
 		return 1
 		break
-	case "INFO":
+	case sINFO:
 		return 2
 		break
-	case "WARN":
+	case sWARN:
 		return 3
 		break
-	case "ERROR":
+	case sERROR:
 		return 4
 		break
 	default:
@@ -191,27 +210,27 @@ void log(String data, String type){
 
 	String ndata = "${logPrefix()} -- ${device.label} -- ${data ?: ''}".toString()
 
-	if(determineLogLevel(type) >= determineLogLevel(settings?.logging ?: "INFO")){
+	if(determineLogLevel(type) >= determineLogLevel(settings?.logging ?: sINFO)){
 		switch (type?.toUpperCase()){
-		case "TRACE":
-			log.trace "${ndata}"
+		case sTRACE:
+			log.trace ndata
 			break
-		case "DEBUG":
-			log.debug "${ndata}"
+		case sDEBUG:
+			log.debug ndata
 			break
-		case "INFO":
-			log.info "${ndata}"
+		case sINFO:
+			log.info ndata
 			break
-		case "WARN":
-			log.warn "${ndata}"
+		case sWARN:
+			log.warn ndata
 			break
-		case "ERROR":
-			log.error "${ndata}"
+		case sERROR:
+			log.error ndata
 			break
 		case "OFF":
 			break
 		default:
-			log.error "NuHeatSig -- ${device.label} -- Invalid Log Setting"
+			log.error "NuHeatSig -- ${device.label} -- Invalid Log Setting".toString()
 		}
 	}
 }
@@ -231,7 +250,7 @@ void installed(){
 	if(settings.defaultHoldTemperature==null){
 		device.updateSetting("defaultHoldTemperature",[value:myVal,type:"number"])
 	}
-	List supportedThermostatModes = ["heat"]  // HE capabilities (no "emerency heat")
+	List<String> supportedThermostatModes = ["heat"]  // HE capabilities (no "emerency heat")
 	sendEvent(name:"supportedThermostatModes", value: supportedThermostatModes, displayed: false )
 	sendEvent(name:"thermostatMode", value: 'heat')
 }
@@ -256,29 +275,31 @@ void updated(){
 }
 
 void initialize(){
-	log("Initializing device handler for NuHeat Signiture Thermostat", "INFO")
-	log("DH Version = ${version()}.".toString(), "INFO")
-	//log("Thermostat Name = ${tStatName}.".toString(), "INFO")
-	log("Thermostat Serial Number = ${tStatSerialNumber}.".toString(), "INFO")
-	log("Username = ${theUser}.".toString(), "INFO")
-	log("Show pasword in log? = ${showPassword}.".toString(), "INFO")
-	if(showPassword){
-		log("Password = ${thePassword}".toString(), "INFO")
-	}
-	log("Logging Level = ${logging}.".toString(), "INFO")
-	//log("Power Usage KWH = ${powerUsage}.".toString(), "INFO")
-	log("Default Hold Time = ${defaultHoldTime}.".toString(), "INFO")
-	log("Default Hold Temperature = ${defaultHoldTemperature}.".toString(), "INFO")
-	log("Auto Refresh = ${autoRefresh1}".toString(), "INFO")
+	if(logEnable){
+		log("Initializing device handler for NuHeat Signiture Thermostat", sINFO)
+		log((String)"DH Version = ${version()}.".toString(), sINFO)
+		//log("Thermostat Name = ${tStatName}.".toString(), sINFO)
+		log((String)"Thermostat Serial Number = ${tStatSerialNumber}.".toString(), sINFO)
+		log((String)"Username = ${theUser}.".toString(), sINFO)
+		log((String)"Show pasword in log? = ${showPassword}.".toString(), sINFO)
+		if(showPassword){
+			log((String)"Password = ${thePassword}".toString(), sINFO)
+		}
+		log((String)"Logging Level = ${logging}.".toString(), sINFO)
+		//log((String)"Power Usage KWH = ${powerUsage}.".toString(), sINFO)
+		log((String)"Default Hold Time = ${defaultHoldTime}.".toString(), sINFO)
+		log((String)"Default Hold Temperature = ${defaultHoldTemperature}.".toString(), sINFO)
+		log((String)"Auto Refresh = ${autoRefresh1}".toString(), sINFO)
 
-	log("Unscheduling jobs...", "INFO")
+		log("Unscheduling jobs...", sINFO)
+	}
 	unschedule()
 
 	if(autoRefresh1){
-		log("Scheduling auto refresh every 5 minutes.", "INFO")
+		log("Scheduling auto refresh every 5 minutes.", sINFO)
 		runEvery5Minutes(updateStatus)
 	}else{
-		log("Auto refresh is disabled.", "INFO")
+		log("Auto refresh is disabled.", sINFO)
 	}
 	getStatus()
 }
@@ -295,35 +316,28 @@ void updateStatus(){
 }
 
 def parse(String description){
-	log("Parse() description = ${description}.".toString(), "DEBUG")
+	log((String)"Parse() description = ${description}.".toString(), sDEBUG)
 }
 
 void refresh(){
-	log("Device is being refreshed.", "INFO")
+	log("Device is being refreshed.", sINFO)
 	Long t=now()
 	if(!state.updatedLastRanAt || t >= (Long)state.updatedLastRanAt + 60000L) getStatus()
 }
 
 void poll(){
-	log("Device is being polled.", "INFO")
+	log("Device is being polled.", sINFO)
 	refresh()
 }
 
 /* Sets the heating setpoint to the specificed temperature for the default time stored in setting */
 void setHeatingSetpoint(degrees){
-	/* Calculate Hold Time */
-	Date date = new Date()
-
 	Integer d=defaultHoldTime ? defaultHoldTime.toInteger(): 1
-	use( TimeCategory ){
-		date = date + d.hours
-	}
-	setHeatingSetpointWithHoldTime(degrees, date)
-
+	setHeatingSetpointWithHoldHours(degrees, d)
 }
 
 void setHeatingSetpointWithHoldTime(degrees, Date date){
-	log("Setting HeatingSetpoint temporary override to ${degrees} until ${date}".toString(), "INFO")
+	log((String)"Setting HeatingSetpoint temporary override to ${degrees} until ${date}".toString(), sINFO)
 
 	if(date == null || date.getTime() < now()){
 		log.error "Bad Date $date"
@@ -331,11 +345,27 @@ void setHeatingSetpointWithHoldTime(degrees, Date date){
 	}
 	String sdate = date.format("yyyy-MM-dd'T'HH:mm:ssZ", TimeZone.getTimeZone('GMT'))
 
-	Map values = ["SetPointTemp": temperatureToSetpoint(degrees), "ScheduleMode": "2", "HoldSetPointDateTime": sdate]
+	LinkedHashMap<String,Object> values = ["SetPointTemp": temperatureToSetpoint(degrees), "ScheduleMode": "2", "HoldSetPointDateTime": sdate]
 	setThermostat(values)
 	sendEvent(name: "heatingSetpoint", value: degrees, unit: getTemperatureScale())
 	sendEvent(name:"thermostatSetpoint", value: degrees, "unit": getTemperatureScale())
+	sendEvent(name:"scheduleStatus", value: "temporary hold")
 	scheduleGetStatus()
+}
+
+void setHeatingSetpointWithHoldHours(degrees, hours){
+	log((String)"Setting HeatingSetpoint temporary override to ${degrees} for ${hours} hours".toString(), sINFO)
+
+	if(hours == null || hours < 1 || hours > 23){
+		log.error "Bad Hours $hours"
+		return
+	}
+	Date date = new Date()
+	Integer d=hours.toInteger()
+	use( TimeCategory ){
+		date = date + d.hours
+	}
+	setHeatingSetpointWithHoldTime(degrees, date)
 }
 
 void setCoolingSetpoint(degrees){
@@ -343,19 +373,21 @@ void setCoolingSetpoint(degrees){
 }
 
 void resume(){
-	log("Resuming schedule", "INFO")
-	Map values = ["ScheduleMode": "1"]
+	log("Resuming schedule", sINFO)
+	LinkedHashMap<String,Object> values = ["ScheduleMode": "1"]
 	setThermostat(values)
+	sendEvent(name:"scheduleStatus", value: "running")
 	scheduleGetStatus()
 }
 
 void indefiniteHold(degrees){
 	if(!degrees) degrees=defaultHoldTemperature ?: state.MinTemp
-	log("Setting indefinite Hold at temperature of ${degrees}", "INFO")
-	Map values = ["SetPointTemp": temperatureToSetpoint(degrees), "ScheduleMode": "3"]
+	log((String)"Setting indefinite Hold at temperature of ${degrees}".toString(), sINFO)
+	LinkedHashMap<String,Object> values = ["SetPointTemp": temperatureToSetpoint(degrees), "ScheduleMode": "3"]
 	setThermostat(values)
 	sendEvent(name: "heatingSetpoint", value: degrees, unit: getTemperatureScale())
 	sendEvent(name:"thermostatSetpoint", value: degrees, "unit": getTemperatureScale())
+	sendEvent(name:"scheduleStatus", value: "indefinite hold")
 	scheduleGetStatus()
 }
 
@@ -366,7 +398,7 @@ void setThermostatMode(String value){
 }
 
 void off(){
-	log("off...", "INFO")
+	log("off...", sINFO)
 	indefiniteHold(null)
 }
 
@@ -383,7 +415,7 @@ void emergencyHeat(){
 }
 
 void heat(){
-	log("Heating...", "INFO")
+	log("Heating...", sINFO)
 }
 
 //--------------------------------------------------------
@@ -393,21 +425,20 @@ void setSessionID(String value){
 }
 
 String getSessionID(){
-	if(state.theSessionID == null){
+	String a=(String)state.theSessionID
+	if(a == (String)null){
 		return "-1"
 	}else{
-		return (String)state.theSessionID
+		return a
 	}
 }
 
 Integer temperatureToSetpoint(value){
-	log("temperatureToSetpoint(${value})", "DEBUG")
-
 	Double t=value.toDouble()
 	if(getTemperatureScale()=='F') t=(t - 32.0D) / 1.8D // * 5.0D/9.0D
 	t=Math.round(t*200.0D)/2.0D
 
-	log("Setpoint from temperature ${value} is ${t}.", "DEBUG")
+	log((String)"Setpoint from temperature ${value} is ${t}.".toString(), sDEBUG)
 	return t.toInteger()
 }
 
@@ -415,7 +446,7 @@ def setpointToTemperature(Integer value){
 	Double t=Math.round(value/100.0D * 2.0D) / 2.0D
 	if(getTemperatureScale()=='F') t=Math.round(t*1.8D + 32.0D)
 
-	log("Temperature from Setpoint ${value} is ${t}.", "DEBUG")
+	log((String)"Temperature from Setpoint ${value} is ${t}.".toString(), sDEBUG)
 
 	if(getTemperatureScale()=='F') return t.toInteger()
 	return t
@@ -424,25 +455,25 @@ def setpointToTemperature(Integer value){
 //--------------------------------------------------------
 
 void scheduleGetStatus(){
-	log("Scheduling a status update in 30 seconds...", "INFO")
+	log("Scheduling a status update in 30 seconds...", sINFO)
 	runIn(30, getStatus)
 }
 
 void getStatus(){
 	String sNum=tStatSerialNumber
-	log("Updating the status of the ${sNum} thermostat.", "INFO")
+	log((String)"Updating the status of the ${sNum} thermostat.".toString(), sINFO)
 
 	Long t=now()
 	state.updatedLastRanAt = t
 
 	if(!isUserAuthenticated()){
 		if(!authenticateUser()){
-			//log("Failed to authenticate user.", "ERROR")
+			//log("Failed to authenticate user.", sERROR)
 			return
 		}
 	}
 
-	def params = [
+	LinkedHashMap<String,Object> params = [
 		uri: "https://www.mynuheat.com/api/thermostat?sessionid=${getSessionID()}&serialnumber=${sNum}",
 		body: []
 	]
@@ -453,11 +484,11 @@ void getStatus(){
 
 	}catch (groovyx.net.http.HttpResponseException e){
 
-		log("Not authenticated, authenticating.", "ERROR")
+		log("Not authenticated, authenticating.", sERROR)
 		userAuthenticated(false)
 
 		if(e.getMessage() == "Unauthorized"){
-			authenticateUser()
+			Boolean a=authenticateUser()
 		}
 	}
 }
@@ -467,23 +498,24 @@ public void myHandler(resp, Map data){
 	String t1=t0!=null && (String)t0."Content-Type" ? (String)t0."Content-Type" : (String)null
 
 	t0.each{
-		log("header ${it.key} : ${it.value}", "TRACE")
+		log((String)"header ${it.key} : ${it.value}".toString(), sTRACE)
 	}
 
-	log("response contentType: ${t1}", "TRACE")
+	log((String)"response contentType: ${t1}".toString(), sTRACE)
 	if(resp.status>=200 && resp.status<300 && resp.data){
 		def myD=resp.getJson()
-		log("response data: ${myD}", "TRACE")
-		log("WPerSquareUnit = ${myD.WPerSquareUnit}", "DEBUG")
-		log("FloorArea = ${myD.FloorArea}", "DEBUG")
-		log("Temperature = ${myD.Temperature}", "DEBUG")
-		log("Heating = ${myD.Heating}", "DEBUG")
-		log("Setpoint = ${myD.SetPointTemp}", "DEBUG")
-
 		String temperatureScale = getTemperatureScale()
-
 		def theTemp = setpointToTemperature(myD.Temperature)
-		log("Converted Temperature: ${theTemp}.".toString(), "DEBUG")
+
+		if(logEnable){
+			log((String)"response data: ${myD}".toString(), sTRACE)
+			log((String)"WPerSquareUnit = ${myD.WPerSquareUnit}".toString(), sDEBUG)
+			log((String)"FloorArea = ${myD.FloorArea}".toString(), sDEBUG)
+			log((String)"Temperature = ${myD.Temperature}".toString(), sDEBUG)
+			log((String)"Heating = ${myD.Heating}".toString(), sDEBUG)
+			log((String)"Setpoint = ${myD.SetPointTemp}".toString(), sDEBUG)
+			log((String)"Converted Temperature: ${theTemp}.".toString(), sDEBUG)
+		}
 		sendEvent(name:"temperature", value: theTemp, unit: temperatureScale)
 
 		//def power = 0
@@ -500,7 +532,7 @@ public void myHandler(resp, Map data){
 			//power = 0
 			//sendEvent("name":"power", "value": power)
 		}
-		//log("Calculated power usage: ${power} watts.".toString(), "DEBUG")
+		//log("Calculated power usage: ${power} watts.".toString(), sDEBUG)
 
 		if(myD.GroupAwayMode) sendEvent(name:"home", value: "away")
 		else sendEvent(name:"home", value: "home")
@@ -524,7 +556,7 @@ public void myHandler(resp, Map data){
 	}else{
 		if(resp.status == 401){
 			userAuthenticated(false)
-			log("Not authenticated, attempting authentication.", "ERROR")
+			log("Not authenticated, attempting authentication.", sERROR)
 			if(authenticateUser()){
 				getStatus()
 				return
@@ -533,38 +565,40 @@ public void myHandler(resp, Map data){
 	}
 }
 
-void setThermostat(Map value_map){
-	log("Attempting to set values ${value_map}.".toString(), "INFO")
+void setThermostat(LinkedHashMap<String,Object> value_map){
+	log((String)"Attempting to set values ${value_map}.".toString(), sINFO)
 	String sNum=tStatSerialNumber
 
 	if(!isUserAuthenticated()){
 		if(!authenticateUser()){
-			//log("Failed to authenticate user.", "ERROR")
+			//log("Failed to authenticate user.", sERROR)
 			return
 		}
 	}
-	def params = [
+	LinkedHashMap<String,Object> params = [
 		uri: "https://www.mynuheat.com/api/thermostat?sessionid=${getSessionID()}&serialnumber=${sNum}",
 		body: value_map
 	]
 
 	try{
 	httpPost(params) {resp ->
-		log("Response: ${resp.status}", "TRACE")
+		log((String)"Response: ${resp.status}".toString(), sTRACE)
 
 		if(!(resp.status>=200 && resp.status<300)) log.error "Response error ${resp.status}"
 
-		//log("Response: ${resp}.", "DEBUG")
-		resp.headers.each{
-			log("header ${it.name} : ${it.value}", "DEBUG")
-		}
+		//log("Response: ${resp}.", sDEBUG)
+		if(logEnable){
+			resp.headers.each{
+				log((String)"header ${it.name} : ${it.value}".toString(), sDEBUG)
+			}
 
-		log("response contentType: ${resp.contentType}", "TRACE")
-		log("response data: ${resp.data}", "TRACE")
+			log((String)"response contentType: ${resp.contentType}".toString(), sTRACE)
+			log((String)"response data: ${resp.data}".toString(), sTRACE)
+		}
 	}
 	}catch (groovyx.net.http.HttpResponseException e){
 
-		log("User is not authenticated, authenticating.", "ERROR")
+		log("User is not authenticated, authenticating.", sERROR)
 		userAuthenticated(false)
 
 		if(e.getMessage() == "Unauthorized"){
@@ -578,46 +612,49 @@ void setThermostat(Map value_map){
 //--------------------------------------------------------
 
 Boolean authenticateUser(){
-	log("Attempting to authenticate user "+theUser, "INFO")
+	log('Attempting to authenticate user '+(String)theUser, sINFO)
 	if(!(theUser && thePassword)){
 		userAuthenticated(false)
 		log.warn "No username or no password"
 		return false
 	}
 	setSessionID("")
-	Map params = [
+	LinkedHashMap<String,Object> params = [
 		uri: 'https://www.mynuheat.com/api/authenticate/user',
 		body: ["Email": theUser, "password": thePassword, "application": "0"]
 	]
 
 	httpPost(params) {resp ->
-		log("Response: ${resp.status}", "TRACE")
-		resp.headers.each{
-			log("header ${it.name} : ${it.value}", "TRACE")
+		if(logEnable){
+			log((String)"Response: ${resp.status}".toString(), sTRACE)
+			resp.headers.each{
+				log((String)"header ${it.name} : ${it.value}".toString(), sTRACE)
+			}
+			log((String)"response contentType: ${resp.contentType}".toString(), sTRACE)
+			log((String)"response data: ${resp.data}".toString(), sTRACE)
+			log((String)"SessionID: ${resp.data["SessionId"]}".toString(), sTRACE)
 		}
-		log("response contentType: ${resp.contentType}", "TRACE")
-		log("response data: ${resp.data}", "TRACE")
-		log("SessionID: ${resp.data["SessionId"]}", "TRACE")
 
 		setSessionID((String)resp.data.SessionId)
 	}
 
 	if(getSessionID() != ""){
 		userAuthenticated(true)
-		log("authentication successful", "INFO")
+		log("authentication successful", sINFO)
 		return true
 	}else{
 		userAuthenticated(false)
-		log("Failed to authenticate.", "ERROR")
+		log("Failed to authenticate.", sERROR)
 		return false
 	}
 }
 
 Boolean isUserAuthenticated(){
-	if(state.authenticatedUser == null){
+	Boolean a=state.authenticatedUser
+	if(a == null){
 		return false
 	}else{
-		return (Boolean)state.authenticatedUser
+		return a
 	}
 }
 
@@ -625,7 +662,7 @@ void userAuthenticated(Boolean value){
 	state.authenticatedUser = value
 }
 
-void updateDeviceLastActivity(lastActivity){
-	def finalString = lastActivity?.format('MM/d/yyyy hh:mm:ss a',location.timeZone)
+void updateDeviceLastActivity(Date lastActivity){
+	String finalString = lastActivity?.format('MM/d/yyyy hh:mm:ss a',location.timeZone)
 	state.lastActivity=finalString
 }
