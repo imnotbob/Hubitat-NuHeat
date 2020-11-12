@@ -1,7 +1,7 @@
 /**
  *  NuHeat Signature Thermostat
  *
- * Modified for HE by ERS 5/17/2020
+ * Modified for HE by ERS 11/06/2020
  *  Copyright 2016 ericvitale@gmail.com
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -27,7 +27,7 @@
 
 import groovy.time.TimeCategory
 
-static String version(){ return "v0.0.001.20200517" }
+static String version(){ return "v0.0.001.202011106" }
 
 metadata{
 	definition (name: "NuHeat Signature Thermostat", namespace: "ericvitale", author: "ericvitale@gmail.com"){
@@ -444,7 +444,8 @@ void getStatus(){
 
 	def params = [
 		uri: "https://www.mynuheat.com/api/thermostat?sessionid=${getSessionID()}&serialnumber=${sNum}",
-		body: []
+		body: [],
+		timeout: 20
 	]
 
 	try{
@@ -545,7 +546,8 @@ void setThermostat(Map value_map){
 	}
 	def params = [
 		uri: "https://www.mynuheat.com/api/thermostat?sessionid=${getSessionID()}&serialnumber=${sNum}",
-		body: value_map
+		body: value_map,
+		timeout: 20
 	]
 
 	try{
@@ -587,7 +589,8 @@ Boolean authenticateUser(){
 	setSessionID("")
 	Map params = [
 		uri: 'https://www.mynuheat.com/api/authenticate/user',
-		body: ["Email": theUser, "password": thePassword, "application": "0"]
+		body: ["Email": theUser, "password": thePassword, "application": "0"],
+		timeout: 20
 	]
 
 	httpPost(params) {resp ->
