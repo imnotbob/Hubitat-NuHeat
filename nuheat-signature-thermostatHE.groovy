@@ -1,11 +1,6 @@
 /**
  *  NuHeat Signature Thermostat
- *  Modified for HE by ERS 10/14/2020
- *
-<<<<<<< HEAD
- * Modified for HE by ERS 11/06/2020
-=======
->>>>>>> master
+ *  Modified for HE by ERS 11/06/2020
  *  Copyright 2016 ericvitale@gmail.com
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -32,11 +27,7 @@
 import groovy.time.TimeCategory
 import groovy.transform.Field
 
-<<<<<<< HEAD
 static String version(){ return "v0.0.001.202011106" }
-=======
-public static String version(){ return "v0.0.001.20201014" }
->>>>>>> master
 
 metadata{
 	definition (name: "NuHeat Signature Thermostat", namespace: "ericvitale", author: "ericvitale@gmail.com"){
