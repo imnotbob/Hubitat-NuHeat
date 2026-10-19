@@ -106,6 +106,10 @@ For more detail, set **Log Level** to `DEBUG` in the app and enable debug loggin
 
 ## OLD Nuheat driver - THIS DOES NOT WORK ANYMORE
 
+You should go to HE console -> Drivers Code and remove "NuHeat Signature Thermostat"   (NOTE "NuHeat Signature Thermostat1" is the driver to keep from above)
+- if "NuHeat Signature Thermostat" shows device in the "In Use" column, those devices should be removed first.
+
+
  Note: You will need an account which can only be setup on a thermostat and nuheat web, mobile app
  
 This uses async I/O for the most common operations
