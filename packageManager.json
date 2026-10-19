@@ -1,18 +1,31 @@
 {
   "packageName": "nuHeat",
   "author": "nh.schottfam",
-  "minimumHEVersion": "2.1.9",
-  "dateReleased": "2020-10-14",
-  "drivers": [
+  "version": "1.0.3",
+  "minimumHEVersion": "2.2.4",
+  "dateReleased": "2026-10-19",
+  "licenseFile": "https://raw.githubusercontent.com/imnotbob/Hubitat-NuHeat/master/LICENSE",
+  "releaseNotes": "Converted to the NuHeat OAuth2 API (api.mynuheat.com). Requires a NuHeat OAuth ClientID/ClientSecret with redirect URI https://cloud.hubitat.com/oauth/stateredirect. Existing thermostat devices must be re-created by the NuHeat Connect app.",
+  "documentationLink": "https://github.com/imnotbob/Hubitat-NuHeat",
+  "communityLink": "https://community.hubitat.com/t/nuheat-signature-integration/41148",
+  "apps": [
     {
-      "id": "665448da-1ed9-4b25-8b5b-53872afb3b4f",
-      "name": "NuHeat Signature Thermostat",
+      "id": "6fac6c2d-6ce4-4605-8b84-46847f9686fb",
+      "name": "NuHeat Connect",
       "namespace": "ericvitale",
-      "location": "https://raw.githubusercontent.com/imnotbob/Hubitat-NuHeat/master/nuheat-signature-thermostatHE.groovy",
-      "required": true
+      "location": "https://raw.githubusercontent.com/imnotbob/Hubitat-NuHeat/master/nuheat-connect.groovy",
+      "required": true,
+      "oauth": true,
+      "primary": true
     }
   ],
-  "version": "1.0.1",
-  "releaseNotes": "Latest release",
-  "communityLink": "https://community.hubitat.com/t/nuheat-signature-integration/41148"
+  "drivers": [
+    {
+      "id": "e70b5dc3-6663-440e-b8cc-a42bc875f299",
+      "name": "NuHeat Signature Thermostat",
+      "namespace": "ericvitale",
+      "location": "https://raw.githubusercontent.com/imnotbob/Hubitat-NuHeat/master/nuheat-thermostat.groovy",
+      "required": true
+    }
+  ]
 }
