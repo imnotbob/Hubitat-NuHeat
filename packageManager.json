@@ -1,11 +1,11 @@
 {
   "packageName": "nuHeat",
   "author": "nh.schottfam",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "minimumHEVersion": "2.2.4",
-  "dateReleased": "2026-10-19",
+  "dateReleased": "2026-11-24",
   "licenseFile": "https://raw.githubusercontent.com/imnotbob/Hubitat-NuHeat/master/LICENSE",
-  "releaseNotes": "Converted to the NuHeat OAuth2 API (api.mynuheat.com). Requires a NuHeat OAuth ClientID/ClientSecret with redirect URI https://cloud.hubitat.com/oauth/stateredirect. Existing thermostat devices must be re-created by the NuHeat Connect app.",
+  "releaseNotes": "Fix to show up under Integrations\nConverted to the NuHeat OAuth2 API (api.mynuheat.com). Requires a NuHeat OAuth ClientID/ClientSecret with redirect URI https://cloud.hubitat.com/oauth/stateredirect. Existing thermostat devices must be re-created by the NuHeat Connect app.",
   "documentationLink": "https://github.com/imnotbob/Hubitat-NuHeat",
   "communityLink": "https://community.hubitat.com/t/nuheat-signature-integration/41148",
   "apps": [
